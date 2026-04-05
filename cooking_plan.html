@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sunday Roast – Cooking Plan</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; background: #1a1208; font-family: Georgia, 'Times New Roman', serif; color: #f0e6d0; }
+
+  @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.35 } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  input[type=time] { background: #2a1a06; border: 2px solid #c9a55a; border-radius: 8px; color: #f5dea0; font-size: 20px; font-family: inherit; padding: 4px 10px; outline: none; }
+  input[type=time]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(1) saturate(2) hue-rotate(5deg); cursor: pointer; }
+
+  button { font-family: inherit; }
+
+  #toasts { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 300px; pointer-events: none; }
+  .toast { position: relative; background: #2a1806; border-radius: 12px; padding: 14px 36px 14px 14px; animation: slideIn 0.35s ease; pointer-events: all; }
+  .toast-close { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #604030; cursor: pointer; font-size: 16px; line-height: 1; }
+
+  #header { background: linear-gradient(135deg,#2d1f0a,#1a1208); border-bottom: 1px solid #3d2a10; padding: 18px 20px 14px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+  #header-inner { max-width: 900px; margin: 0 auto; }
+  #header-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  #header-bottom { display: flex; gap: 12px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+
+  #progress-wrap { flex: 1; min-width: 160px; }
+  #progress-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11px; color: #a08050; }
+  #progress-track { height: 5px; background: #2d1f0a; border-radius: 3px; border: 1px solid #3d2a10; }
+  #progress-bar { height: 100%; background: linear-gradient(90deg,#c9a55a,#e8c870); border-radius: 3px; transition: width 0.5s; }
+
+  #next-wrap { background: #200f02; border-radius: 10px; padding: 6px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  #next-countdown { font-weight: bold; min-width: 56px; text-align: right; font-size: 16px; }
+
+  #notif-btn { border-radius: 8px; font-size: 18px; padding: 5px 10px; cursor: pointer; flex-shrink: 0; transition: all 0.2s; }
+
+  #main { max-width: 900px; margin: 0 auto; padding: 18px 12px 40px; }
+
+  #timeline-wrap { background: #1f160a; border: 1px solid #3d2a10; border-radius: 12px; padding: 14px 14px 10px; margin-bottom: 20px; }
+  #tl-label { font-size: 10px; letter-spacing: 0.2em; color: #c9a55a; text-transform: uppercase; margin-bottom: 12px; }
+  #tl-axis { position: relative; height: 14px; margin-bottom: 4px; }
+  #tl-rule { height: 1px; background: #3d2a10; margin-bottom: 7px; }
+  #tl-bars { position: relative; }
+
+  #cards { display: flex; flex-direction: column; gap: 8px; }
+
+  .card { border-radius: 10px; overflow: hidden; transition: all 0.25s; }
+  .card-row { display: flex; align-items: center; gap: 10px; padding: 11px 13px; cursor: pointer; user-select: none; }
+  .card-detail { padding: 10px 14px 12px; }
+  .card-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap: 8px; }
+  .detail-cell { background: #160f06; border: 1px solid #2d1f0a; border-radius: 8px; padding: 7px 10px; }
+  .detail-label { font-size: 9px; color: #806040; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+  .detail-value { font-size: 14px; color: #f0d090; font-weight: bold; }
+
+  .tick-btn { width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.2s; }
+  .alarm-btn { border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 14px; transition: all 0.2s; flex-shrink: 0; }
+  .method-badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+  .chevron { color: #604030; font-size: 10px; transition: transform 0.2s; flex-shrink: 0; }
+
+  #footer-note { margin-top: 18px; padding: 12px 14px; background: #1f160a; border: 1px solid #3d2a10; border-radius: 10px; font-size: 11px; color: #806040; line-height: 1.7; }
+
+  /* Reset button */
+  #save-bar { margin-top: 18px; background: #1f160a; border: 1px solid #3d2a10; border-radius: 10px; padding: 14px 16px; }
+  #save-bar-label { font-size: 10px; letter-spacing: 0.15em; color: #c9a55a; text-transform: uppercase; margin-bottom: 10px; }
+  #save-bar-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .save-btn { background: #2a1a06; border: 1px solid #4d3a18; border-radius: 8px; color: #c9a55a; font-size: 13px; padding: 9px 18px; cursor: pointer; font-family: inherit; transition: all 0.2s; flex: 1; min-width: 130px; }
+  .save-btn:hover { background: #3a2a10; border-color: #c9a55a; }
+  #save-hint { font-size: 11px; color: #604030; line-height: 1.5; }
+  #reset-btn { margin-top: 10px; background: none; border: 1px solid #3d2010; border-radius: 8px; color: #604030; font-size: 11px; padding: 6px 14px; cursor: pointer; width: 100%; transition: all 0.2s; }
+  #reset-btn:hover { border-color: #e05030; color: #e05030; }
+</style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<div id="header">
+  <div id="header-inner">
+    <div id="header-top">
+      <div>
+        <div style="font-size:10px;letter-spacing:0.2em;color:#c9a55a;text-transform:uppercase;margin-bottom:2px">Sunday Roast</div>
+        <h1 style="font-size:22px;font-weight:normal;color:#f5dea0">Cooking Plan</h1>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end">
+        <div style="font-size:10px;letter-spacing:0.12em;color:#c9a55a;text-transform:uppercase;margin-bottom:4px">Meal Finish Time</div>
+        <div id="time-display"></div>
+      </div>
+    </div>
+    <div id="header-bottom">
+      <div id="progress-wrap">
+        <div id="progress-row"><span id="progress-text"></span><span id="progress-pct"></span></div>
+        <div id="progress-track"><div id="progress-bar" style="width:0%"></div></div>
+      </div>
+      <div id="next-wrap" style="display:none">
+        <span id="next-emoji" style="font-size:18px"></span>
+        <div style="line-height:1.3">
+          <div style="font-size:9px;color:#806040;letter-spacing:0.12em;text-transform:uppercase">Next up</div>
+          <div id="next-name" style="font-size:12px;color:#f0d090"></div>
+        </div>
+        <div id="next-countdown"></div>
+      </div>
+      <button id="notif-btn" onclick="requestNotif()">🔕</button>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="timeline-wrap">
+    <div id="tl-label">Visual Timeline</div>
+    <div id="tl-axis"></div>
+    <div id="tl-rule"></div>
+    <div id="tl-bars"></div>
+  </div>
+  <div id="cards"></div>
+  <div id="footer-note">
+    <span style="color:#c9a55a;font-weight:bold">⚠️ Oven note: </span>
+    190–230°C items overlap — plan shelf positions carefully. Yorkshire puddings go in last.<br>
+    <span style="color:#604030">🔔 Tap 🔕 on any item to set an alarm. Tap the 🔕 in the header to enable browser notifications.</span>
+  </div>
+  <div id="save-bar">
+    <div id="save-bar-label">💾 Your progress</div>
+    <div id="save-bar-btns">
+      <button class="save-btn" onclick="exportState()" title="Download your progress as a small file">⬇ Save progress</button>
+      <button class="save-btn" onclick="document.getElementById('import-input').click()" title="Load a previously saved progress file">⬆ Load progress</button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importState(event)" />
+    </div>
+    <div id="save-hint">Open the saved file next time to restore your ticks, alarms &amp; finish time.</div>
+  </div>
+  <button id="reset-btn" onclick="confirmReset()">↺ Reset all ticks &amp; alarms</button>
+</div>
+
+<script>
+// ─── Data ────────────────────────────────────────────────────────────────────
+const BASE_ITEMS = [
+  { id:1, name:"Chicken",                     method:"Oven",                   temp:200,  cookMins:110, restMins:30, offsetFromEnd:140, notes:"Roast whole chicken; rests before carving", color:"#e07b39", emoji:"🍗" },
+  { id:2, name:"Roast Potatoes",               method:"Air Fryer",              temp:null, cookMins:30,  restMins:0,  offsetFromEnd:30,  notes:"Updated to 30 mins",                        color:"#c9a84c", emoji:"🥔" },
+  { id:3, name:"Cauliflower Cheese",           method:"Oven",                   temp:190,  cookMins:25,  restMins:0,  offsetFromEnd:25,  notes:null,                                        color:"#8bb87a", emoji:"🧀" },
+  { id:4, name:"Stuffing Balls",               method:"Oven",                   temp:190,  cookMins:25,  restMins:0,  offsetFromEnd:25,  notes:null,                                        color:"#b07d5a", emoji:"🍞" },
+  { id:5, name:"Pigs in Blankets",             method:"Oven",                   temp:220,  cookMins:25,  restMins:0,  offsetFromEnd:25,  notes:null,                                        color:"#c9605a", emoji:"🌭" },
+  { id:6, name:"Yorkshire Puddings",           method:"Oven",                   temp:230,  cookMins:20,  restMins:0,  offsetFromEnd:20,  notes:"Do last due to oven space",                 color:"#d4924a", emoji:"🍮" },
+  { id:7, name:"Veg (Broccoli + Cauliflower)", method:"Steamer",               temp:null, cookMins:15,  restMins:0,  offsetFromEnd:15,  notes:"Soft veg finish",                           color:"#5a9e6f", emoji:"🥦" },
+  { id:8, name:"Salmon Fillet",                method:"Oven in Foil",           temp:null, cookMins:25,  restMins:0,  offsetFromEnd:25,  notes:null,                                        color:"#e08060", emoji:"🐟" },
+  { id:9, name:"Mash Potatoes",                method:"Pressure Cooker / Boil", temp:null, cookMins:null,restMins:0,  offsetFromEnd:null,notes:"Add your final cook time here",             color:"#a0a060", emoji:"🫕" },
+];
+
+// ─── State (persisted in localStorage) ───────────────────────────────────────
+const LS_KEY = "cookingPlan_v1";
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+}
+function saveState(s) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {}
+}
+
+let state = Object.assign({ finishTime:"16:00", checked:{}, alarms:{}, firedAlarms:{}, expanded:{} }, loadState());
+
+function persist() { saveState(state); }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function pad(n) { return String(n).padStart(2,"0"); }
+function timeStrToMins(t) { if (!t) return null; const [h,m]=t.split(":").map(Number); return h*60+m; }
+function fmt12(m) {
+  if (m==null) return "—";
+  const h=Math.floor(m/60)%24, min=m%60, suffix=h>=12?"PM":"AM", d=h>12?h-12:h===0?12:h;
+  return `${d}:${pad(min)} ${suffix}`;
+}
+function fmtCountdown(secs) {
+  if (secs<=0) return "NOW";
+  const h=Math.floor(secs/3600), m=Math.floor((secs%3600)/60), s=secs%60;
+  if (h>0) return `${h}h ${pad(m)}m`;
+  if (m>0) return `${m}m ${pad(s)}s`;
+  return `${s}s`;
+}
+
+function computeItems(finishMins) {
+  return BASE_ITEMS.map(item => ({
+    ...item,
+    startMins: item.offsetFromEnd!=null ? finishMins-item.offsetFromEnd : null,
+    cookEndMins: item.offsetFromEnd!=null ? finishMins-item.offsetFromEnd+(item.cookMins||0) : null,
+    finishMins,
+  }));
+}
+
+function beep() {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.35,0.7].forEach(delay => {
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value=880;
+      gain.gain.setValueAtTime(0.35, ctx.currentTime+delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+0.3);
+      osc.start(ctx.currentTime+delay); osc.stop(ctx.currentTime+delay+0.3);
+    });
+  } catch(e) {}
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+async function requestNotif() {
+  if (!("Notification" in window)) { alert("Your browser doesn't support notifications."); return; }
+  await Notification.requestPermission();
+  updateNotifBtn();
+}
+function updateNotifBtn() {
+  const btn = document.getElementById("notif-btn");
+  const granted = "Notification" in window && Notification.permission==="granted";
+  btn.textContent = granted ? "🔔" : "🔕";
+  btn.style.background = granted ? "#1a3a1a" : "#2a1a06";
+  btn.style.border = `1px solid ${granted ? "#4a8a4a" : "#3d2a10"}`;
+  btn.style.color = granted ? "#6aaa6a" : "#706040";
+}
+
+// ─── Toasts ────────────────────────────────────────────────────────────────────
+function showToast(item) {
+  const container = document.getElementById("toasts");
+  const div = document.createElement("div");
+  div.className = "toast";
+  div.style.border = `2px solid ${item.color}`;
+  div.style.boxShadow = `0 4px 20px ${item.color}55`;
+  div.innerHTML = `
+    <div style="font-size:22px;margin-bottom:4px">${item.emoji}</div>
+    <div style="font-weight:bold;color:#f5dea0;font-size:15px">${item.name}</div>
+    <div style="font-size:12px;color:#c0a060;margin-top:3px">Time to start! ${item.method}${item.temp?` · ${item.temp}°C`:""}</div>
+    <div style="font-size:11px;color:#806040;margin-top:2px">Cook ${item.cookMins} mins → ready ${fmt12(item.finishMins)}</div>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+  setTimeout(() => div.remove(), 9000);
+}
+
+function triggerAlarm(item) {
+  state.firedAlarms[item.id] = true;
+  persist();
+  beep();
+  if ("Notification" in window && Notification.permission==="granted") {
+    try { new Notification(`🍽️ ${item.name}`, { body:`Time to start! ${item.method}${item.temp?` at ${item.temp}°C`:""}.${item.cookMins?` Cook for ${item.cookMins} mins.`:""}` }); } catch(e) {}
+  }
+  showToast(item);
+  renderCards();
+}
+
+// ─── Time editor ─────────────────────────────────────────────────────────────
+function renderTimeDisplay() {
+  const finishMins = timeStrToMins(state.finishTime) || 960;
+  const container = document.getElementById("time-display");
+  if (state.editingTime) {
+    // Parse current finish time into h/m for the steppers
+    const curH = Math.floor(finishMins / 60) % 24;
+    const curM = finishMins % 60;
+    container.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <button onclick="adjustTime('h',1)" style="background:#3a2510;border:1px solid #5a3a18;border-radius:5px;color:#c9a55a;font-size:16px;width:36px;height:28px;cursor:pointer">▲</button>
+          <div id="te-h" style="font-size:22px;font-weight:bold;color:#f5dea0;width:36px;text-align:center">${pad(curH)}</div>
+          <button onclick="adjustTime('h',-1)" style="background:#3a2510;border:1px solid #5a3a18;border-radius:5px;color:#c9a55a;font-size:16px;width:36px;height:28px;cursor:pointer">▼</button>
+        </div>
+        <div style="font-size:24px;font-weight:bold;color:#c9a55a;margin-bottom:2px">:</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+          <button onclick="adjustTime('m',5)" style="background:#3a2510;border:1px solid #5a3a18;border-radius:5px;color:#c9a55a;font-size:16px;width:36px;height:28px;cursor:pointer">▲</button>
+          <div id="te-m" style="font-size:22px;font-weight:bold;color:#f5dea0;width:36px;text-align:center">${pad(curM)}</div>
+          <button onclick="adjustTime('m',-5)" style="background:#3a2510;border:1px solid #5a3a18;border-radius:5px;color:#c9a55a;font-size:16px;width:36px;height:28px;cursor:pointer">▼</button>
+        </div>
+        <button onclick="setFinishTime()" style="background:#c9a55a;border:none;border-radius:6px;color:#1a1208;font-weight:bold;padding:8px 14px;cursor:pointer;font-size:13px;margin-left:4px">✓ Set</button>
+      </div>`;
+    // Store working values
+    window._editH = curH;
+    window._editM = curM;
+  } else {
+    container.innerHTML = `
+      <button id="time-btn" onclick="startEditTime()" style="background:none;border:2px solid #3d2a10;border-radius:8px;color:#f5dea0;font-size:22px;font-weight:bold;padding:3px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:border-color 0.2s">
+        ${fmt12(finishMins)} <span style="font-size:13px;color:#806040">✏️</span>
+      </button>`;
+    document.getElementById("time-btn").onmouseenter = e => e.currentTarget.style.borderColor="#c9a55a";
+    document.getElementById("time-btn").onmouseleave = e => e.currentTarget.style.borderColor="#3d2a10";
+  }
+}
+
+function adjustTime(unit, delta) {
+  if (unit === 'h') {
+    window._editH = (window._editH + delta + 24) % 24;
+    document.getElementById("te-h").textContent = pad(window._editH);
+  } else {
+    window._editM = (window._editM + delta + 60) % 60;
+    document.getElementById("te-m").textContent = pad(window._editM);
+  }
+}
+
+function startEditTime() { state.editingTime = true; renderTimeDisplay(); }
+
+function setFinishTime() {
+  const h = window._editH != null ? window._editH : Math.floor((timeStrToMins(state.finishTime)||960) / 60);
+  const m = window._editM != null ? window._editM : (timeStrToMins(state.finishTime)||960) % 60;
+  state.finishTime = `${pad(h)}:${pad(m)}`;
+  state.editingTime = false;
+  state.firedAlarms = {};
+  window._editH = null;
+  window._editM = null;
+  persist();
+  render();
+}
+
+// ─── Progress ─────────────────────────────────────────────────────────────────
+function renderProgress(items) {
+  const done = items.filter(i => state.checked[i.id]).length;
+  const total = items.length;
+  document.getElementById("progress-text").textContent = `${done} of ${total} done`;
+  document.getElementById("progress-pct").textContent = `${Math.round((done/total)*100)}%`;
+  document.getElementById("progress-bar").style.width = `${(done/total)*100}%`;
+}
+
+// ─── Next up countdown ────────────────────────────────────────────────────────
+function renderNext(items, now) {
+  const wrap = document.getElementById("next-wrap");
+  const nowMs = now.getTime();
+  const next = items
+    .filter(i => i.startMins!=null && !state.checked[i.id])
+    .sort((a,b)=>a.startMins-b.startMins)
+    .find(i => {
+      const d=new Date(); d.setHours(Math.floor(i.startMins/60),i.startMins%60,0,0);
+      return d.getTime() > nowMs;
+    });
+  if (!next) { wrap.style.display="none"; return; }
+  const d=new Date(); d.setHours(Math.floor(next.startMins/60),next.startMins%60,0,0);
+  const secs = Math.max(0, Math.round((d.getTime()-nowMs)/1000));
+  wrap.style.display="flex";
+  wrap.style.border=`1px solid ${next.color}55`;
+  document.getElementById("next-emoji").textContent=next.emoji;
+  document.getElementById("next-name").textContent=next.name;
+  const cd = document.getElementById("next-countdown");
+  cd.textContent=fmtCountdown(secs);
+  cd.style.color = secs<60?"#e04040":secs<300?"#e0a020":next.color;
+  cd.style.fontSize = secs<300?"20px":"16px";
+  cd.style.animation = secs<60?"pulse 1s infinite":"none";
+}
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+function renderTimeline(items, now) {
+  const finishMins = timeStrToMins(state.finishTime) || 960;
+  const validStarts = items.filter(i=>i.startMins!=null).map(i=>i.startMins);
+  const tlStart = validStarts.length ? Math.min(...validStarts)-15 : finishMins-160;
+  const tlEnd = finishMins+10;
+  const total = tlEnd-tlStart;
+  const pct = m => ((m-tlStart)/total)*100;
+
+  // Axis labels
+  const axis = document.getElementById("tl-axis");
+  axis.innerHTML="";
+  const labelStart = Math.ceil(tlStart/30)*30;
+  for (let m=labelStart; m<=tlEnd; m+=30) {
+    const el=document.createElement("div");
+    el.style.cssText=`position:absolute;left:${pct(m)}%;transform:translateX(-50%);font-size:8px;color:#806040;white-space:nowrap`;
+    el.textContent=fmt12(m);
+    axis.appendChild(el);
+  }
+
+  // Bars
+  const bars = document.getElementById("tl-bars");
+  bars.innerHTML="";
+  items.forEach(item => {
+    const row=document.createElement("div");
+    row.style.cssText="position:relative;height:20px;margin-bottom:3px";
+    const done=state.checked[item.id];
+    if (item.startMins==null) {
+      row.style.display="flex"; row.style.alignItems="center";
+      row.innerHTML=`<span style="font-size:8px;color:#403028;font-style:italic">${item.emoji} ${item.name} — TBC</span>`;
+      bars.appendChild(row); return;
+    }
+    const lp=pct(item.startMins), wp=((item.cookMins||0)/total)*100, rp=(item.restMins/total)*100;
+    const track=document.createElement("div");
+    track.style.cssText="position:absolute;left:0;right:0;top:50%;height:1px;background:#2a1e0e";
+    const bar=document.createElement("div");
+    bar.style.cssText=`position:absolute;left:${lp}%;width:${wp}%;height:100%;background:${done?"#3a3a2a":`linear-gradient(90deg,${item.color}cc,${item.color}88)`};border-radius:3px;overflow:hidden;display:flex;align-items:center;padding-left:4px;box-shadow:${done?"none":`0 1px 5px ${item.color}44`}`;
+    const lbl=document.createElement("span");
+    lbl.style.cssText=`font-size:7px;color:${done?"#555":"#fff"};white-space:nowrap;font-weight:bold`;
+    lbl.textContent=`${item.emoji} ${item.name}`;
+    bar.appendChild(lbl);
+    row.appendChild(track); row.appendChild(bar);
+    if (item.restMins>0) {
+      const rest=document.createElement("div");
+      rest.style.cssText=`position:absolute;left:${lp+wp}%;width:${rp}%;height:100%;background:${item.color}20;border:1px dashed ${item.color}44;border-left:none;border-radius:0 3px 3px 0;display:flex;align-items:center;justify-content:center;font-size:6px;color:${item.color}`;
+      rest.textContent="rest";
+      row.appendChild(rest);
+    }
+    bars.appendChild(row);
+  });
+
+  // Serve line
+  const serve=document.createElement("div");
+  serve.style.cssText=`position:absolute;top:0;bottom:0;left:${pct(finishMins)}%;width:2px;background:#c9a55a66;pointer-events:none`;
+  serve.innerHTML=`<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:7px;color:#c9a55a;white-space:nowrap">SERVE</div>`;
+  bars.appendChild(serve);
+
+  // Now line
+  const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  if (nowMins>=tlStart && nowMins<=tlEnd) {
+    const nowLine=document.createElement("div");
+    nowLine.style.cssText=`position:absolute;top:0;bottom:0;left:${pct(nowMins)}%;width:2px;background:#e05050;box-shadow:0 0 6px #e05050;z-index:10;pointer-events:none`;
+    nowLine.innerHTML=`<div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:7px;color:#e05050;white-space:nowrap;font-weight:bold">NOW</div>`;
+    bars.appendChild(nowLine);
+  }
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+function renderCards() {
+  const finishMins = timeStrToMins(state.finishTime)||960;
+  const items = computeItems(finishMins);
+  const container = document.getElementById("cards");
+  container.innerHTML="";
+  const now=new Date();
+
+  items.forEach(item => {
+    const done=state.checked[item.id], alarmOn=state.alarms[item.id], fired=state.firedAlarms[item.id], expanded=state.expanded[item.id];
+    let startDate=null;
+    if (item.startMins!=null) { startDate=new Date(); startDate.setHours(Math.floor(item.startMins/60),item.startMins%60,0,0); }
+    const overdue=startDate && startDate<=now && !done;
+
+    const card=document.createElement("div");
+    card.className="card";
+    card.style.background=done?"#161209":"#1f160a";
+    card.style.border=`1px solid ${done?"#2a2010":overdue?"#e0503044":expanded?item.color:"#3d2a10"}`;
+    card.style.borderLeft=`4px solid ${done?"#3a3020":overdue?"#e05030":item.color}`;
+    card.style.opacity=done?"0.5":"1";
+    card.style.boxShadow=overdue&&!done?"0 0 12px #e0503022":expanded&&!done?`0 0 14px ${item.color}22`:"none";
+
+    const row=document.createElement("div");
+    row.className="card-row";
+
+    // Tick
+    const tick=document.createElement("button");
+    tick.className="tick-btn";
+    tick.style.border=`2px solid ${done?"#4a6a4a":item.color}`;
+    tick.style.background=done?"#2a4a2a":"transparent";
+    tick.innerHTML=done?`<span style="color:#6aaa6a">✓</span>`:"";
+    tick.onclick=e=>{ e.stopPropagation(); state.checked[item.id]=!state.checked[item.id]; persist(); render(); };
+
+    // Emoji
+    const emoji=document.createElement("span");
+    emoji.style.cssText="font-size:19px;flex-shrink:0";
+    emoji.textContent=item.emoji;
+
+    // Name+sub
+    const info=document.createElement("div");
+    info.style.cssText="flex:1;min-width:0";
+    const nameEl=document.createElement("div");
+    nameEl.style.cssText=`font-size:14px;font-weight:bold;color:${done?"#555":overdue?"#e09070":"#f0e0c0"};text-decoration:${done?"line-through":"none"}`;
+    nameEl.textContent=item.name;
+    if (overdue&&!done) {
+      const badge=document.createElement("span");
+      badge.style.cssText="font-size:10px;color:#e05030;margin-left:8px;font-weight:normal;animation:pulse 1.2s infinite";
+      badge.textContent="● NOW";
+      nameEl.appendChild(badge);
+    }
+    const sub=document.createElement("div");
+    sub.style.cssText=`font-size:11px;color:${done?"#444":"#906a3a"};margin-top:1px`;
+    sub.textContent=(item.startMins!=null?`${fmt12(item.startMins)} → ${fmt12(item.finishMins)}`:"TBC")+(item.cookMins?` · ${item.cookMins} mins`:"")+(item.temp?` · ${item.temp}°C`:"");
+    info.appendChild(nameEl); info.appendChild(sub);
+
+    // Method badge
+    const badge=document.createElement("div");
+    badge.className="method-badge";
+    badge.style.background=`${item.color}22`;
+    badge.style.border=`1px solid ${item.color}44`;
+    badge.style.color=done?"#555":item.color;
+    badge.textContent=item.method;
+
+    // Alarm
+    let alarmBtn=null;
+    if (item.startMins!=null) {
+      alarmBtn=document.createElement("button");
+      alarmBtn.className="alarm-btn";
+      alarmBtn.style.background=fired?"#1a3a1a":alarmOn?`${item.color}22`:"transparent";
+      alarmBtn.style.border=`1px solid ${fired?"#4a8a4a":alarmOn?item.color:"#3d2a10"}`;
+      alarmBtn.style.color=fired?"#6aaa6a":alarmOn?item.color:"#504030";
+      alarmBtn.textContent=fired?"✅":alarmOn?"🔔":"🔕";
+      alarmBtn.title=alarmOn?"Cancel alarm":"Set alarm for this item";
+      alarmBtn.onclick=e=>{
+        e.stopPropagation();
+        state.alarms[item.id]=!state.alarms[item.id];
+        state.firedAlarms[item.id]=false;
+        persist();
+        if (state.alarms[item.id] && "Notification" in window && Notification.permission!=="granted") requestNotif();
+        renderCards();
+      };
+    }
+
+    // Chevron
+    const chev=document.createElement("span");
+    chev.className="chevron";
+    chev.textContent="▼";
+    chev.style.transform=expanded?"rotate(180deg)":"none";
+
+    row.appendChild(tick); row.appendChild(emoji); row.appendChild(info); row.appendChild(badge);
+    if (alarmBtn) row.appendChild(alarmBtn);
+    row.appendChild(chev);
+
+    row.onclick=()=>{
+      state.expanded[item.id]=!state.expanded[item.id];
+      persist();
+      renderCards();
+    };
+
+    card.appendChild(row);
+
+    // Expanded detail
+    if (expanded) {
+      const detail=document.createElement("div");
+      detail.className="card-detail";
+      detail.style.borderTop=`1px solid ${item.color}33`;
+      const grid=document.createElement("div");
+      grid.className="card-detail-grid";
+      [["Start",fmt12(item.startMins)],["Cook",item.cookMins?`${item.cookMins} mins`:"TBC"],["Temp",item.temp?`${item.temp}°C`:"N/A"],["Rest",item.restMins>0?`${item.restMins} mins`:"None"],["Ready",fmt12(item.finishMins)]].forEach(([l,v])=>{
+        const cell=document.createElement("div"); cell.className="detail-cell";
+        cell.innerHTML=`<div class="detail-label">${l}</div><div class="detail-value">${v}</div>`;
+        grid.appendChild(cell);
+      });
+      detail.appendChild(grid);
+      if (item.notes) {
+        const notes=document.createElement("div");
+        notes.style.cssText=`background:${item.color}11;border:1px solid ${item.color}33;border-radius:8px;padding:8px 12px;font-size:12px;color:#c0a070;font-style:italic;margin-top:10px`;
+        notes.textContent=`💬 ${item.notes}`;
+        detail.appendChild(notes);
+      }
+      card.appendChild(detail);
+    }
+
+    container.appendChild(card);
+  });
+}
+
+// ─── Alarm checker ────────────────────────────────────────────────────────────
+function checkAlarms(items, now) {
+  const nowMins=now.getHours()*60+now.getMinutes();
+  items.forEach(item=>{
+    if (state.alarms[item.id] && !state.firedAlarms[item.id] && !state.checked[item.id] && item.startMins!=null && nowMins>=item.startMins) {
+      triggerAlarm(item);
+    }
+  });
+}
+
+// ─── Main render ─────────────────────────────────────────────────────────────
+function render() {
+  const finishMins=timeStrToMins(state.finishTime)||960;
+  const items=computeItems(finishMins);
+  const now=new Date();
+  renderTimeDisplay();
+  renderProgress(items);
+  renderNext(items,now);
+  renderTimeline(items,now);
+  renderCards();
+  updateNotifBtn();
+}
+
+// ─── Export / Import ──────────────────────────────────────────────────────────
+function exportState() {
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const date = new Date();
+  const stamp = `${date.getFullYear()}${pad(date.getMonth()+1)}${pad(date.getDate())}`;
+  a.href = url; a.download = `roast_progress_${stamp}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  flashSaveBtn("⬇ Saved! ✓");
+}
+
+function importState(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const loaded = JSON.parse(e.target.result);
+      if (loaded && typeof loaded === "object") {
+        state = Object.assign({ finishTime:"16:00", checked:{}, alarms:{}, firedAlarms:{}, expanded:{} }, loaded);
+        persist(); render();
+        flashSaveBtn("⬆ Loaded! ✓");
+      }
+    } catch { alert("Couldn't read that file — make sure it's a progress file saved from this app."); }
+  };
+  reader.readAsText(file);
+  event.target.value = ""; // allow re-importing same file
+}
+
+function flashSaveBtn(msg) {
+  const btns = document.querySelectorAll(".save-btn");
+  const original = [];
+  btns.forEach((b,i) => { original[i]=b.textContent; });
+  // find which button triggered it by checking msg prefix
+  const idx = msg.startsWith("⬇") ? 0 : 1;
+  btns[idx].textContent = msg;
+  btns[idx].style.borderColor = "#6aaa6a";
+  btns[idx].style.color = "#6aaa6a";
+  setTimeout(() => { btns[idx].textContent = original[idx]; btns[idx].style.borderColor=""; btns[idx].style.color=""; }, 2000);
+}
+
+// ─── Reset ────────────────────────────────────────────────────────────────────
+function confirmReset() {
+  if (confirm("Reset all ticks, alarms and expanded states? Your finish time will be kept.")) {
+    state.checked={}; state.alarms={}; state.firedAlarms={}; state.expanded={};
+    persist(); render();
+  }
+}
+
+// ─── Tick loop ────────────────────────────────────────────────────────────────
+let lastSec=-1;
+function tick() {
+  const now=new Date();
+  const finishMins=timeStrToMins(state.finishTime)||960;
+  const items=computeItems(finishMins);
+  // Full render once per second for countdown
+  renderNext(items,now);
+  // Timeline NOW bar refreshed every 30s
+  if (now.getSeconds()===0 && now.getSeconds()!==lastSec) { renderTimeline(items,now); lastSec=now.getSeconds(); }
+  checkAlarms(items,now);
+  requestAnimationFrame(tick);
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────────
+render();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
